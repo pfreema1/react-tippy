@@ -1,59 +1,54 @@
-import {
-  Browser,
-  Store,
-  Selectors,
-  Defaults
-} from './core/globals'
-import ReactDOM from 'react-dom'
+import { Browser, Store, Selectors, Defaults } from './core/globals';
+import ReactDOM from 'react-dom';
 
-import init from './core/init'
+import init from './core/init';
 
 /* Utility functions */
-import defer                   from './utils/defer'
-import prefix                  from './utils/prefix'
-import find                    from './utils/find'
-import findIndex               from './utils/findIndex'
-import removeTitle             from './utils/removeTitle'
-import elementIsInViewport     from './utils/elementIsInViewport'
-import triggerReflow           from './utils/triggerReflow'
-import modifyClassList         from './utils/modifyClassList'
-import getInnerElements        from './utils/getInnerElements'
-import applyTransitionDuration from './utils/applyTransitionDuration'
-import isVisible               from './utils/isVisible'
-import noop                    from './utils/noop'
+import defer from './utils/defer';
+import prefix from './utils/prefix';
+import find from './utils/find';
+import findIndex from './utils/findIndex';
+import removeTitle from './utils/removeTitle';
+import elementIsInViewport from './utils/elementIsInViewport';
+import triggerReflow from './utils/triggerReflow';
+import modifyClassList from './utils/modifyClassList';
+import getInnerElements from './utils/getInnerElements';
+import applyTransitionDuration from './utils/applyTransitionDuration';
+import isVisible from './utils/isVisible';
+import noop from './utils/noop';
 
 /* Core library functions */
-import followCursorHandler from './core/followCursorHandler'
-import getArrayOfElements  from './core/getArrayOfElements'
-import onTransitionEnd     from './core/onTransitionEnd'
-import mountPopper         from './core/mountPopper'
-import makeSticky          from './core/makeSticky'
-import createTooltips      from './core/createTooltips'
+import followCursorHandler from './core/followCursorHandler';
+import getArrayOfElements from './core/getArrayOfElements';
+import onTransitionEnd from './core/onTransitionEnd';
+import mountPopper from './core/mountPopper';
+import makeSticky from './core/makeSticky';
+import createTooltips from './core/createTooltips';
 
 /**
-* @param {String|Element|Element[]} selector
-* @param {Object} settings (optional) - the object of settings to be applied to the instance
-*/
+ * @param {String|Element|Element[]} selector
+ * @param {Object} settings (optional) - the object of settings to be applied to the instance
+ */
 class Tippy {
   constructor(selector, settings = {}) {
     // Use default browser tooltip on unsupported browsers
-    if (!Browser.SUPPORTED) return
+    if (!Browser.SUPPORTED) return;
 
-    init()
+    init();
 
     this.state = {
       destroyed: false
-    }
+    };
 
-    this.selector = selector
+    this.selector = selector;
 
-    this.settings = { ...Defaults, ...settings }
+    this.settings = { ...Defaults, ...settings };
 
     if (settings.show || settings.shown || settings.hide || settings.hidden) {
       console.warn(
         'Callbacks without the `on` prefix are deprecated (with the exception of `wait`).' +
-        ' Use onShow, onShown, onHide, and onHidden instead.'
-      )
+          ' Use onShow, onShown, onHide, and onHidden instead.'
+      );
     }
 
     this.callbacks = {
@@ -62,107 +57,104 @@ class Tippy {
       shown: settings.onShown || settings.shown || noop,
       hide: settings.onHide || settings.hide || noop,
       hidden: settings.onHidden || settings.hidden || noop
-    }
+    };
 
-    this.store = createTooltips.call(this, getArrayOfElements(selector))
-    Store.push.apply(Store, this.store)
+    this.store = createTooltips.call(this, getArrayOfElements(selector));
+    Store.push.apply(Store, this.store);
   }
 
   /**
-  * Returns the reference element's popper element
-  * @param {Element} el
-  * @return {Element}
-  */
+   * Returns the reference element's popper element
+   * @param {Element} el
+   * @return {Element}
+   */
   getPopperElement(el) {
     try {
-      return find(this.store, data => data.el === el).popper
+      return find(this.store, data => data.el === el).popper;
     } catch (e) {
-      console.error('[getPopperElement]: Element passed as the argument does not exist in the instance')
+      console.error(
+        '[getPopperElement]: Element passed as the argument does not exist in the instance'
+      );
     }
   }
 
   /**
-  * Returns a popper's reference element
-  * @param {Element} popper
-  * @return {Element}
-  */
+   * Returns a popper's reference element
+   * @param {Element} popper
+   * @return {Element}
+   */
   getReferenceElement(popper) {
     try {
-      return find(this.store, data => data.popper === popper).el
+      return find(this.store, data => data.popper === popper).el;
     } catch (e) {
-      console.error('[getReferenceElement]: Popper passed as the argument does not exist in the instance')
+      console.error(
+        '[getReferenceElement]: Popper passed as the argument does not exist in the instance'
+      );
     }
   }
 
   /**
-  * Returns the reference data object from either the reference element or popper element
-  * @param {Element} x (reference element or popper)
-  * @return {Object}
-  */
+   * Returns the reference data object from either the reference element or popper element
+   * @param {Element} x (reference element or popper)
+   * @return {Object}
+   */
   getReferenceData(x) {
-    return find(this.store, data => data.el === x || data.popper === x)
+    return find(this.store, data => data.el === x || data.popper === x);
   }
 
   /**
-  * Update settings
-  * @param {DOMElement} - popper
-  * @param {string} - name
-  * @param {string} - value
-  */
+   * Update settings
+   * @param {DOMElement} - popper
+   * @param {string} - name
+   * @param {string} - value
+   */
 
   updateSettings(popper, name, value) {
-    const data = find(this.store, data => data.popper === popper)
+    const data = find(this.store, data => data.popper === popper);
     const newSettings = {
       ...data.settings,
-      [name]: value,
-    }
+      [name]: value
+    };
     data.settings = newSettings;
-  };
+  }
 
   /**
-  * Update for React
-  * @param {DOMElement} - popper
-  * @param {ReactElement} - content
-  */
+   * Update for React
+   * @param {DOMElement} - popper
+   * @param {ReactElement} - content
+   */
   updateForReact(popper, updatedContent) {
-    const tooltipContent = popper.querySelector(Selectors.CONTENT)
-    const data = find(this.store, data => data.popper === popper)
+    const tooltipContent = popper.querySelector(Selectors.CONTENT);
+    const data = find(this.store, data => data.popper === popper);
 
-    const {
-      useContext,
-      reactInstance,
-    } = data.settings;
+    const { useContext, reactInstance } = data.settings;
     if (useContext) {
       ReactDOM.unstable_renderSubtreeIntoContainer(
         data.settings.reactInstance,
         updatedContent,
-        tooltipContent,
+        tooltipContent
       );
     } else {
-      ReactDOM.render(
-        updatedContent,
-        tooltipContent,
-      );
+      ReactDOM.render(updatedContent, tooltipContent);
     }
-
   }
   /**
-  * Shows a popper
-  * @param {Element} popper
-  * @param {Number} customDuration (optional)
-  */
+   * Shows a popper
+   * @param {Element} popper
+   * @param {Number} customDuration (optional)
+   */
   show(popper, customDuration) {
-    if (this.state.destroyed) return
+    if (this.state.destroyed) return;
 
-    const data = find(this.store, data => data.popper === popper)
-    const { tooltip, circle, content } = getInnerElements(popper)
+    const data = find(this.store, data => data.popper === popper);
+    const { tooltip, circle, content } = getInnerElements(popper);
 
     if (!document.body.contains(data.el)) {
-      this.destroy(popper)
-      return
+      this.destroy(popper);
+      return;
     }
 
-    this.callbacks.show.call(popper)
+    this.callbacks.show.call(popper);
 
     // Custom react
     if (data && data.settings && data.settings.open === false) {
@@ -170,7 +162,7 @@ class Tippy {
     }
 
     if (data.settings.reactDOM) {
-      this.updateForReact(popper, data.settings.reactDOM)
+      this.updateForReact(popper, data.settings.reactDOM);
     }
     // end: Custom react
 
@@ -185,93 +177,99 @@ class Tippy {
         duration,
         dynamicTitle
       }
-    } = data
+    } = data;
 
     if (dynamicTitle) {
-      const title = el.getAttribute('title')
+      const title = el.getAttribute('title');
       if (title) {
-        content.innerHTML = title
-        removeTitle(el)
+        content.innerHTML = title;
+        removeTitle(el);
       }
     }
 
-    const _duration = customDuration !== undefined
-      ? customDuration
-      : Array.isArray(duration) ? duration[0] : duration
+    const _duration =
+      customDuration !== undefined
+        ? customDuration
+        : Array.isArray(duration) ? duration[0] : duration;
 
     // Prevent a transition when popper changes position
-    applyTransitionDuration([popper, tooltip, circle], 0)
+    applyTransitionDuration([popper, tooltip, circle], 0);
 
-    mountPopper(data)
+    mountPopper(data);
 
-    popper.style.visibility = 'visible'
-    popper.setAttribute('aria-hidden', 'false')
+    popper.style.visibility = 'visible';
+    popper.setAttribute('aria-hidden', 'false');
 
     // Wait for popper's position to update
     defer(() => {
       // Sometimes the arrow will not be in the correct position, force another update
       if (!followCursor || Browser.touch) {
-        data.popperInstance.update()
-        applyTransitionDuration([popper], flipDuration)
+        data.popperInstance.update();
+        applyTransitionDuration([popper], flipDuration);
       }
 
       // Re-apply transition durations
-      applyTransitionDuration([tooltip, circle], _duration)
+      applyTransitionDuration([tooltip, circle], _duration);
 
       // Make content fade out a bit faster than the tooltip if `animateFill`
-      if (circle) content.style.opacity = 1
+      if (circle) content.style.opacity = 1;
 
       // Interactive tooltips receive a class of 'active'
-      interactive && el.classList.add('active')
+      interactive && el.classList.add('active');
 
       // Update popper's position on every animation frame
-      sticky && makeSticky(data)
+      sticky && makeSticky(data);
 
       // Repaint/reflow is required for CSS transition when appending
-      triggerReflow(tooltip, circle)
+      triggerReflow(tooltip, circle);
 
       modifyClassList([tooltip, circle], list => {
-        list.contains('tippy-notransition') && list.remove('tippy-notransition')
-        list.remove('leave')
-        list.add('enter')
-      })
+        list.contains('tippy-notransition') &&
+          list.remove('tippy-notransition');
+        list.remove('leave');
+        list.add('enter');
+      });
 
       // Wait for transitions to complete
       onTransitionEnd(data, _duration, () => {
-        if (!isVisible(popper) || data._onShownFired) return
+        if (!isVisible(popper) || data._onShownFired) return;
 
         // Focus interactive tooltips only
-        interactive && popper.focus()
+        interactive && popper.focus();
         // Remove transitions from tooltip
-        tooltip.classList.add('tippy-notransition')
+        tooltip.classList.add('tippy-notransition');
         // Prevents shown() from firing more than once from early transition cancellations
-        data._onShownFired = true
+        data._onShownFired = true;
 
-        this.callbacks.shown.call(popper)
-      })
-    })
+        this.callbacks.shown.call(popper);
+      });
+    });
   }
 
   /**
-  * Hides a popper
-  * @param {Element} popper
-  * @param {Number} customDuration (optional)
-  */
+   * Hides a popper
+   * @param {Element} popper
+   * @param {Number} customDuration (optional)
+   */
   hide(popper, customDuration) {
-    if (this.state.destroyed) return
+    if (this.state.destroyed) return;
 
-    this.callbacks.hide.call(popper)
+    this.callbacks.hide.call(popper);
 
-    const data = find(this.store, data => data.popper === popper)
-    const { tooltip, circle, content } = getInnerElements(popper)
+    const data = find(this.store, data => data.popper === popper);
+    const { tooltip, circle, content } = getInnerElements(popper);
 
     // custom react
     // Prevent hide if open
-    if (data.settings.disabled === false && data.settings.open) {
+    if (data.settings.disabled === false && data && data.settings.open) {
       return;
     }
 
-    const isUnmount = data && data.settings && data.settings.unmountHTMLWhenHide && data.settings.reactDOM;
+    const isUnmount =
+      data &&
+      data.settings &&
+      data.settings.unmountHTMLWhenHide &&
+      data.settings.reactDOM;
     // end: custom react
 
     const {
@@ -285,33 +283,37 @@ class Tippy {
         trigger,
         duration
       }
-    } = data
+    } = data;
 
-    const _duration = customDuration !== undefined
-      ? customDuration
-      : Array.isArray(duration) ? duration[1] : duration
+    const _duration =
+      customDuration !== undefined
+        ? customDuration
+        : Array.isArray(duration) ? duration[1] : duration;
 
-    data._onShownFired = false
-    interactive && el.classList.remove('active')
+    data._onShownFired = false;
+    interactive && el.classList.remove('active');
 
-    popper.style.visibility = 'hidden'
-    popper.setAttribute('aria-hidden', 'true')
+    popper.style.visibility = 'hidden';
+    popper.setAttribute('aria-hidden', 'true');
 
-    applyTransitionDuration([tooltip, circle, circle ? content : null], _duration)
+    applyTransitionDuration(
+      [tooltip, circle, circle ? content : null],
+      _duration
+    );
 
-    if (circle) content.style.opacity = 0
+    if (circle) content.style.opacity = 0;
 
     modifyClassList([tooltip, circle], list => {
-      list.contains('tippy-tooltip') && list.remove('tippy-notransition')
-      list.remove('enter')
-      list.add('leave')
-    })
+      list.contains('tippy-tooltip') && list.remove('tippy-notransition');
+      list.remove('enter');
+      list.add('leave');
+    });
 
     // Re-focus click-triggered html elements
     // and the tooltipped element IS in the viewport (otherwise it causes unsightly scrolling
     // if the tooltip is closed and the element isn't in the viewport anymore)
     if (html && trigger.indexOf('click') !== -1 && elementIsInViewport(el)) {
-      el.focus()
+      el.focus();
     }
 
     // Wait for transitions to complete
@@ -324,112 +326,114 @@ class Tippy {
         isVisible(popper) ||
         !appendTo.contains(popper) ||
         getComputedStyle(tooltip).opacity === '1'
-      ) return
+      )
+        return;
 
-      el.removeEventListener('mousemove', followCursorHandler)
-      data.popperInstance.disableEventListeners()
-      appendTo.removeChild(popper)
+      el.removeEventListener('mousemove', followCursorHandler);
+      data.popperInstance.disableEventListeners();
+      appendTo.removeChild(popper);
 
-      this.callbacks.hidden.call(popper)
+      this.callbacks.hidden.call(popper);
 
       // custom react
       if (isUnmount) {
         ReactDOM.unmountComponentAtNode(content);
       }
-    })
+    });
   }
 
   /**
-  * Updates a popper with new content
-  * @param {Element} popper
-  */
+   * Updates a popper with new content
+   * @param {Element} popper
+   */
   update(popper) {
-    if (this.state.destroyed) return
+    if (this.state.destroyed) return;
 
-    const data = find(this.store, data => data.popper === popper)
-    const { content } = getInnerElements(popper)
-    const { el, settings: { html } } = data
+    const data = find(this.store, data => data.popper === popper);
+    const { content } = getInnerElements(popper);
+    const { el, settings: { html } } = data;
 
     if (html instanceof Element) {
-      console.warn('Aborted: update() should not be used if `html` is a DOM element')
-      return
+      console.warn(
+        'Aborted: update() should not be used if `html` is a DOM element'
+      );
+      return;
     }
 
     content.innerHTML = html
       ? document.getElementById(html.replace('#', '')).innerHTML
-      : el.getAttribute('title') || el.getAttribute('data-original-title')
+      : el.getAttribute('title') || el.getAttribute('data-original-title');
 
-    if (!html) removeTitle(el)
+    if (!html) removeTitle(el);
   }
 
   /**
-  * Destroys a popper
-  * @param {Element} popper
-  * @param {Boolean} _isLast - private param used by destroyAll to optimize
-  */
+   * Destroys a popper
+   * @param {Element} popper
+   * @param {Boolean} _isLast - private param used by destroyAll to optimize
+   */
   destroy(popper, _isLast) {
-    if (this.state.destroyed) return
+    if (this.state.destroyed) return;
 
-    const data = find(this.store, data => data.popper === popper)
+    const data = find(this.store, data => data.popper === popper);
 
-    const {
-      el,
-      popperInstance,
-      listeners,
-      _mutationObserver
-    } = data
+    const { el, popperInstance, listeners, _mutationObserver } = data;
 
     // Ensure the popper is hidden
     if (isVisible(popper)) {
-      this.hide(popper, 0)
+      this.hide(popper, 0);
     }
 
     // Remove Tippy-only event listeners from tooltipped element
-    listeners.forEach(listener => el.removeEventListener(listener.event, listener.handler))
+    listeners.forEach(listener =>
+      el.removeEventListener(listener.event, listener.handler)
+    );
 
     // Restore original title
-    el.setAttribute('title', el.getAttribute('data-original-title'))
+    el.setAttribute('title', el.getAttribute('data-original-title'));
 
-    el.removeAttribute('data-original-title')
-    el.removeAttribute('data-tooltipped')
-    el.removeAttribute('aria-describedby')
+    el.removeAttribute('data-original-title');
+    el.removeAttribute('data-tooltipped');
+    el.removeAttribute('aria-describedby');
 
-    popperInstance && popperInstance.destroy()
-    _mutationObserver && _mutationObserver.disconnect()
+    popperInstance && popperInstance.destroy();
+    _mutationObserver && _mutationObserver.disconnect();
 
     // Remove from store
-    Store.splice(findIndex(Store, data => data.popper === popper), 1)
+    Store.splice(findIndex(Store, data => data.popper === popper), 1);
 
     // Ensure filter is called only once
     if (_isLast === undefined || _isLast) {
-      this.store = Store.filter(data => data.tippyInstance === this)
+      this.store = Store.filter(data => data.tippyInstance === this);
     }
   }
 
   /**
-  * Destroys all tooltips created by the instance
-  */
+   * Destroys all tooltips created by the instance
+   */
   destroyAll() {
-    if (this.state.destroyed) return
+    if (this.state.destroyed) return;
 
-    const storeLength = this.store.length
+    const storeLength = this.store.length;
 
-    this.store.forEach(({popper}, index) => {
-      this.destroy(popper, index === storeLength - 1)
-    })
+    this.store.forEach(({ popper }, index) => {
+      this.destroy(popper, index === storeLength - 1);
+    });
 
-    this.store = null
-    this.state.destroyed = true
+    this.store = null;
+    this.state.destroyed = true;
   }
 }
 
 function tippy(selector, settings) {
-  return new Tippy(selector, settings)
+  return new Tippy(selector, settings);
 }
 
-tippy.Browser = Browser
-tippy.Defaults = Defaults
-tippy.disableDynamicInputDetection = () => Browser.dynamicInputDetection = false
-tippy.enableDynamicInputDetection = () => Browser.dynamicInputDetection = true
+tippy.Browser = Browser;
+tippy.Defaults = Defaults;
+tippy.disableDynamicInputDetection = () =>
+  (Browser.dynamicInputDetection = false);
+tippy.enableDynamicInputDetection = () =>
+  (Browser.dynamicInputDetection = true);
 
-export default tippy
+export default tippy;
